@@ -1,0 +1,30 @@
+# ======================
+# DEPENDENCIAS
+# ======================
+**/node_modules/
+
+# ======================
+# BUILDS
+# ======================
+**/dist/
+**/build/
+**/.next/
+
+# ======================
+# ARCHIVOS DE USUARIO / UPLOADS
+# ======================
+**/uploads/
+**/public/uploads/
+
+# ======================
+# VARIABLES DE ENTORNO
+# ======================
+**/.env
+**/.env.*
+
+# ======================
+# EDITOR / OS
+# ======================
+.vscode/
+.DS_Store
+Thumbs.db
