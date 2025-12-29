@@ -2,16 +2,34 @@ import { Request, Response } from "express";
 import pool from "../db";
 import fs from "fs";
 
-export const getAllProducts = async (_req: Request, res: Response) => {
+export const getAllProducts = async (req: Request, res: Response) => {
   try {
+    const { category, limit } = req.query;
+    
+    let whereClause = "";
+    const params: any[] = [];
+    
+    if (category) {
+      params.push(Number(category));
+      whereClause = `WHERE p.category_id = $${params.length}`;
+    }
+    
+    let limitClause = "";
+    if (limit) {
+      params.push(Number(limit));
+      limitClause = `LIMIT $${params.length}`;
+    }
+
     const products = await pool.query(`
       SELECT 
         p.*, 
         c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
+      ${whereClause}
       ORDER BY p.id
-    `);
+      ${limitClause}
+    `, params);
 
     const fullProducts = await Promise.all(
       products.rows.map(async (p) => {

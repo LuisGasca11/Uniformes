@@ -1,5 +1,6 @@
 import { useCart } from "@/hooks/CartProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useWishlist } from "@/hooks/WishlistProvider";
 import { useState, useEffect, useRef } from "react";
 import {
   Menu,
@@ -13,9 +14,10 @@ import {
   Plus,
   ClipboardList,
   Store,
-  FolderTree, 
+  FolderTree,
+  Heart,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Login from "../components/admin/pages/Login";
 
 const Navbar = () => {
@@ -37,6 +39,7 @@ const Navbar = () => {
 
   const { user, isLogged, logout, role } = useAuth();
   const { totalQuantity, toggleCart } = useCart();
+  const { items: wishlistItems } = useWishlist();
 
   useEffect(() => {
     setCartBounce(true);
@@ -147,12 +150,13 @@ const Navbar = () => {
   return (
     <>
       <nav className="bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 text-white relative shadow-lg">
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+        {/* Primera fila - Logo, búsqueda y acciones */}
+        <div className="px-2 sm:px-4 py-2 sm:py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
             
-            {/* Menu Button */}
+            {/* Menu Button - Solo móvil */}
             <button 
-              className="lg:hidden p-2 hover:bg-gray-700 rounded-lg transition-all duration-200 active:scale-95" 
+              className="lg:hidden p-1.5 hover:bg-gray-700 rounded-lg transition-all duration-200 active:scale-95 shrink-0" 
               onClick={() => setMenuOpen(true)}
             >
               <Menu className="w-6 h-6 text-white" />
@@ -160,59 +164,46 @@ const Navbar = () => {
 
             {/* Logo */}
             <div
-              className="flex items-center gap-2 cursor-pointer group"
+              className="shrink-0 cursor-pointer group"
               onClick={() => navigate("/")}
             >
-              <div className="text-2xl md:text-3xl font-bold group-hover:scale-110 transition-transform duration-300">
-                <img src="/fyttwh.png" className="w-16 sm:w-20 hover:scale-105 transition-transform duration-500" alt="Fyttsa Logo" />
-              </div>
+              <img src="/fyttwh.png" className="w-14 sm:w-16 md:w-20 hover:scale-105 transition-transform duration-300" alt="Fyttsa Logo" />
+            </div>
 
-              <div className="hidden sm:block text-xs leading-tight hover:text-sky-400 transition-colors duration-200">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  <span>Enviar a</span>
-                </div>
+            {/* Ubicación - Solo desktop */}
+            <div className="hidden lg:flex items-center gap-1 text-xs cursor-pointer hover:text-sky-400 transition-colors shrink-0">
+              <MapPin className="w-4 h-4" />
+              <div>
+                <div className="text-gray-400">Enviar a</div>
                 <div className="font-bold">México</div>
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex-1 flex min-w-[200px] lg:max-w-none relative" ref={dropdownRef}>
+            {/* Search Bar - Se expande */}
+            <div className="flex-1 flex min-w-0 relative" ref={dropdownRef}>
               <select
                 value={selectedCategory}
                 onChange={(e) => {
                   const value = e.target.value;
                   setSelectedCategory(value);
-
                   if (value === "all") {
                     navigate("/uniformes"); 
                   } else {
                     navigate(`/categoria/${value}`);
                   }
                 }}
-                className="
-                  hidden sm:block
-                  bg-gray-100 text-gray-900
-                  px-3 py-2 rounded-l
-                  border-r border-gray-300
-                  focus:outline-none
-                  focus:ring-2 focus:ring-sky-400
-                  transition-all
-                "
+                className="hidden md:block bg-gray-200 text-gray-800 px-2 py-2 rounded-l text-sm border-r border-gray-300 focus:outline-none shrink-0"
               >
                 <option value="all">Todos</option>
-
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
 
               <input
                 type="text"
                 placeholder="Buscar en Fyttsa"
-                className="flex-1 px-3 py-2 rounded-l sm:rounded-none text-white bg-gray-700 outline-none focus:bg-gray-600 transition-colors duration-200 placeholder-gray-400"
+                className="flex-1 min-w-0 px-3 py-2 rounded-l md:rounded-none text-gray-900 bg-white outline-none text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -220,7 +211,7 @@ const Navbar = () => {
               />
 
               <button
-                className="bg-linear-to-r from-sky-400 to-sky-500 px-6 rounded-r hover:from-sky-500 hover:to-sky-600 transition-all duration-200 active:scale-95 shadow-md"
+                className="bg-[#009be9] hover:bg-[#0089d0] px-3 sm:px-4 rounded-r transition-colors shrink-0"
                 onClick={handleSearch}
               >
                 <Search className="w-5 h-5" />
@@ -228,32 +219,24 @@ const Navbar = () => {
 
               {/* Search Suggestions */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute left-0 top-full w-full bg-white text-black rounded-lg shadow-2xl z-50 mt-2 max-h-80 overflow-y-auto animate-fadeIn">
-                  {suggestions.map((item, index) => (
+                <div className="absolute left-0 top-full w-full bg-white text-gray-900 rounded-lg shadow-2xl z-50 mt-1 max-h-80 overflow-y-auto">
+                  {suggestions.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 p-3 hover:bg-sky-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-0"
-                      style={{ animationDelay: `${index * 50}ms` }}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"
                       onClick={() => {
                         navigate(`/buscar?q=${encodeURIComponent(item.name)}`);
                         setShowSuggestions(false);
                       }}
                     >
                       <img
-                        src={
-                          item.image
-                            ? `http://localhost:4000/uploads/${item.image}`
-                            : "/products/default.jpg"
-                        }
-                        className="w-14 h-14 object-cover rounded-lg border border-gray-200 shadow-sm"
+                        src={item.image ? `http://localhost:4000/uploads/${item.image}` : "/products/default.jpg"}
+                        className="w-12 h-12 object-cover rounded border"
                         alt={item.name}
                       />
-
-                      <div className="flex flex-col flex-1">
-                        <span className="font-medium text-gray-800">{item.name}</span>
-                        <span className="text-sm text-sky-600 font-semibold">
-                          ${item.price}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{item.name}</div>
+                        <div className="text-[#009be9] font-bold text-sm">${item.price}</div>
                       </div>
                     </div>
                   ))}
@@ -261,113 +244,86 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center gap-6 ml-auto">
-
+            {/* Acciones - Desktop */}
+            <div className="hidden lg:flex items-center gap-4 shrink-0">
               {/* Account Menu */}
-              <div 
-                ref={accountRef}
-                className="text-sm cursor-pointer leading-tight relative group"
-              >
+              <div ref={accountRef} className="relative">
                 {isLogged ? (
                   <>
                     <div 
                       onClick={() => setShowAccountMenu(!showAccountMenu)}
-                      className="hover:text-sky-400 transition-colors duration-200"
+                      className="cursor-pointer hover:text-sky-400 transition-colors text-sm"
                     >
-                      <div>Hola, {user.name}</div>
+                      <div className="text-gray-400">Hola, {user?.name?.split(' ')[0]}</div>
                       <div className="font-bold flex items-center gap-1">
-                        Cuenta <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAccountMenu ? 'rotate-180' : ''}`} />
+                        Cuenta <ChevronDown className={`w-4 h-4 transition-transform ${showAccountMenu ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
 
                     {showAccountMenu && (
-                      <div className="absolute top-full right-0 mt-2 bg-white text-gray-800 rounded-lg shadow-2xl py-2 min-w-[200px] z-50 animate-fadeIn">
-                        <div
-                          onClick={() => {
-                            navigate("/mis-pedidos");
-                            setShowAccountMenu(false);
-                          }}
-                          className="px-4 py-2 hover:bg-sky-50 hover:text-sky-600 cursor-pointer transition-colors duration-150 flex items-center gap-2"
-                        >
-                          <ClipboardList className="w-4 h-4" />
-                          Mis pedidos
+                      <div className="absolute top-full right-0 mt-2 bg-white text-gray-800 rounded-lg shadow-2xl py-2 min-w-[180px] z-50">
+                        <div onClick={() => { navigate("/perfil"); setShowAccountMenu(false); }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
+                          <Package className="w-4 h-4" /> Mi perfil
                         </div>
-
-                        <div className="border-t border-gray-200 my-1"></div>
-
-                        <div
-                          onClick={() => {
-                            logout();
-                            setShowAccountMenu(false);
-                            navigate("/Uniformes");
-                          }}
-                          className="px-4 py-2 text-red-500 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors duration-150 flex items-center gap-2"
-                        >
-                          <X className="w-4 h-4" />
-                          Cerrar sesión
+                        <div onClick={() => { navigate("/mis-pedidos"); setShowAccountMenu(false); }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
+                          <ClipboardList className="w-4 h-4" /> Mis pedidos
+                        </div>
+                        <div onClick={() => { navigate("/favoritos"); setShowAccountMenu(false); }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
+                          <Heart className="w-4 h-4" /> Favoritos
+                        </div>
+                        <div className="border-t my-1"></div>
+                        <div onClick={() => { logout(); setShowAccountMenu(false); navigate("/"); }} className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer flex items-center gap-2">
+                          <X className="w-4 h-4" /> Cerrar sesión
                         </div>
                       </div>
                     )}
                   </>
                 ) : (
-                  <div
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent("open-login"))
-                    }
-                    className="hover:text-sky-400 transition-colors duration-200"
-                  >
-                    <div>Hola, Identifícate</div>
-                    <div className="font-bold flex items-center gap-1">
-                      Cuenta y Listas <ChevronDown className="w-4 h-4" />
-                    </div>
+                  <div onClick={() => navigate("/login")} className="cursor-pointer hover:text-sky-400 transition-colors text-sm">
+                    <div className="text-gray-400">Hola, Identifícate</div>
+                    <div className="font-bold flex items-center gap-1">Cuenta <ChevronDown className="w-4 h-4" /></div>
                   </div>
                 )}
               </div>
 
-              {/* Cart */}
-              <div
-                className={`relative flex items-center gap-2 cursor-pointer group ${cartBounce ? 'animate-bounce' : ''}`}
-                onClick={toggleCart}
-              >
-                <div className="relative">
-                  <ShoppingCart className="w-8 h-8 group-hover:text-sky-400 transition-colors duration-200" />
+              {/* Wishlist */}
+              <Link to="/favoritos" className="relative hover:text-red-400 transition-colors">
+                <Heart className="w-7 h-7" />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </Link>
 
+              {/* Cart */}
+              <div onClick={toggleCart} className={`cursor-pointer flex items-center gap-1 hover:text-sky-400 transition-colors ${cartBounce ? 'animate-bounce' : ''}`}>
+                <div className="relative">
+                  <ShoppingCart className="w-8 h-8" />
                   {totalQuantity > 0 && (
-                    <span
-                      className="
-                        absolute -top-2 -right-2
-                        bg-linear-to-r from-orange-500 to-red-500 text-white text-xs font-bold
-                        rounded-full w-6 h-6 flex items-center justify-center
-                        shadow-lg animate-pulse
-                      "
-                    >
+                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {totalQuantity}
                     </span>
                   )}
                 </div>
-
-                <span className="font-bold text-white group-hover:text-sky-400 transition-colors duration-200">Carrito</span>
+                <span className="font-bold text-sm">Carrito</span>
               </div>
             </div>
 
-            {/* Mobile Cart */}
-            <div
-              className="lg:hidden relative flex items-center gap-1 cursor-pointer ml-auto"
-              onClick={toggleCart}
-            >
-              <div className="relative">
-                <ShoppingCart className="w-7 h-7" />
-
+            {/* Acciones - Móvil */}
+            <div className="flex lg:hidden items-center gap-1 shrink-0">
+              <Link to="/favoritos" className="relative p-1.5 hover:bg-gray-700 rounded-lg">
+                <Heart className="w-6 h-6" />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </Link>
+              <div onClick={toggleCart} className="relative p-1.5 hover:bg-gray-700 rounded-lg cursor-pointer">
+                <ShoppingCart className="w-6 h-6" />
                 {totalQuantity > 0 && (
-                  <span
-                    className="
-                      absolute -top-2 -right-2
-                      bg-linear-to-r from-orange-500 to-red-500 text-white text-xs font-bold
-                      rounded-full w-5 h-5 flex items-center justify-center
-                      shadow-lg
-                    "
-                  >
+                  <span className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {totalQuantity}
                   </span>
                 )}
@@ -376,30 +332,20 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Admin Bar */}
+        {/* Admin Bar - Solo para admins */}
         {isLogged && role === "admin" && (
-          <div className="bg-linear-to-r from-gray-800 via-gray-700 to-gray-800 border-t border-gray-600 px-4 py-3">
-            <div className="flex items-center justify-center gap-3 overflow-x-auto scrollbar-hide">
-              {adminLinks.map((item, index) => {
+          <div className="bg-gray-800 border-t border-gray-700 px-2 py-2 overflow-x-auto">
+            <div className="flex items-center gap-2 min-w-max">
+              {adminLinks.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.to}
                     onClick={() => navigate(item.to)}
-                    className={`
-                      flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium
-                      transition-all duration-300 whitespace-nowrap
-                      bg-linear-to-r from-gray-700 to-gray-600 text-gray-200
-                      border border-gray-600
-                      hover:from-sky-600 hover:to-sky-500 hover:text-white 
-                      hover:border-sky-400 hover:shadow-lg hover:scale-105
-                      active:scale-95
-                      animate-slideIn
-                    `}
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap bg-gray-700 hover:bg-[#009be9] transition-colors"
                   >
                     <Icon className="w-4 h-4" />
-                    {item.label}
+                    <span className="hidden sm:inline">{item.label}</span>
                   </button>
                 );
               })}
@@ -410,60 +356,82 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
           <div 
-            className="bg-white w-80 h-full shadow-2xl animate-slideInLeft"
+            className="bg-white w-72 max-w-[85vw] h-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 bg-linear-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between">
-              <div className="text-xl font-bold">Menú</div>
+              <div className="text-lg font-bold">Menú</div>
               <button 
                 onClick={() => setMenuOpen(false)}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-2">
               {isLogged ? (
                 <>
-                  <div className="font-bold text-lg text-gray-800">
-                    Hola, {user.name}
+                  <div className="font-bold text-gray-800 pb-2 border-b">
+                    Hola, {user?.name}
                   </div>
                   <button
-                    onClick={() => {
-                      navigate("/mis-pedidos");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-3 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 transition-colors flex items-center gap-2"
+                    onClick={() => { navigate("/perfil"); setMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
                   >
-                    <ClipboardList className="w-5 h-5" />
-                    Mis pedidos
+                    <Package className="w-5 h-5" /> Mi perfil
                   </button>
                   <button
-                    onClick={() => {
-                      logout();
-                      setMenuOpen(false);
-                      navigate("/Uniformes");
-                    }}
-                    className="w-full text-left px-4 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
+                    onClick={() => { navigate("/mis-pedidos"); setMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
                   >
-                    <X className="w-5 h-5" />
-                    Cerrar sesión
+                    <ClipboardList className="w-5 h-5" /> Mis pedidos
+                  </button>
+                  <button
+                    onClick={() => { navigate("/favoritos"); setMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+                  >
+                    <Heart className="w-5 h-5" /> Favoritos
+                  </button>
+                  <div className="border-t my-2"></div>
+                  <button
+                    onClick={() => { logout(); setMenuOpen(false); navigate("/"); }}
+                    className="w-full text-left px-3 py-2.5 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
+                  >
+                    <X className="w-5 h-5" /> Cerrar sesión
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent("open-login"));
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-3 bg-linear-to-r from-sky-500 to-sky-600 text-white rounded-lg hover:from-sky-600 hover:to-sky-700 transition-all font-medium shadow-md"
-                >
-                  Iniciar Sesión
-                </button>
+                <>
+                  <button
+                    onClick={() => { navigate("/login"); setMenuOpen(false); }}
+                    className="w-full px-4 py-3 bg-[#009be9] text-white rounded-lg hover:bg-[#0089d0] transition-colors font-medium"
+                  >
+                    Iniciar Sesión
+                  </button>
+                  <button
+                    onClick={() => { navigate("/registro"); setMenuOpen(false); }}
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Crear cuenta
+                  </button>
+                </>
               )}
+
+              <div className="border-t my-3 pt-3">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Categorías</div>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { navigate(`/categoria/${cat.id}`); setMenuOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -471,92 +439,21 @@ const Navbar = () => {
 
       {/* Login Modal */}
       {showLogin && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div
             ref={modalRef}
-            className="relative bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md animate-scaleIn"
+            className="relative bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
           >
             <button
               onClick={() => setShowLogin(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-lg z-10"
             >
               <X className="w-5 h-5" />
             </button>
-
             <Login />
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-
-        .animate-slideIn {
-          animation: slideIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.3s ease-out;
-        }
-
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out;
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </>
   );
 };

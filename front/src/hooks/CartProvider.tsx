@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "./useAuth";
 
@@ -23,6 +24,10 @@ interface CartContextType {
   toggleCart: () => void;
   addToCart: (product_id: number, variant_id: number, quantity: number) => void;
   removeItem: (itemId: number) => void;
+  updateQuantity: (itemId: number, quantity: number) => void;
+  checkout: () => Promise<{ success: boolean; orderId?: number }>;
+  loadCart: () => void;
+  clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -31,6 +36,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { isLogged } = useAuth();
+  const navigate = useNavigate();
 
   const loadCart = async () => {
     if (!isLogged) {
@@ -59,13 +65,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const addToCart = async (product_id: number, variant_id: number, quantity: number) => {
     if (!isLogged) {
-      toast.error("Debes iniciar sesión para agregar productos al carrito");
-      window.dispatchEvent(new CustomEvent("open-login"));
+      toast.error("Debes registrarte para agregar productos al carrito");
+      navigate("/registro");
       return;
     }
 
     try {
-      await fetch("http://localhost:4000/api/cart/add", {
+      const res = await fetch("http://localhost:4000/api/cart/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,6 +84,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         }),
       });
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Error al agregar producto");
+        return;
+      }
+
       toast.success("Producto agregado al carrito");
 
       await loadCart();
@@ -88,18 +101,81 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const removeItem = async (itemId: number) => {
-    await fetch(`http://localhost:4000/api/cart/item/${itemId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  const updateQuantity = async (itemId: number, quantity: number) => {
+    if (quantity < 1) return;
 
-    loadCart();
+    try {
+      const res = await fetch(`http://localhost:4000/api/cart/item/${itemId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ quantity }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Error al actualizar cantidad");
+        return;
+      }
+
+      await loadCart();
+    } catch (err) {
+      toast.error("Error al actualizar cantidad");
+      console.error(err);
+    }
+  };
+
+  const removeItem = async (itemId: number) => {
+    try {
+      await fetch(`http://localhost:4000/api/cart/item/${itemId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      toast.success("Producto eliminado del carrito");
+      loadCart();
+    } catch (err) {
+      toast.error("Error al eliminar producto");
+      console.error(err);
+    }
+  };
+
+  const checkoutCart = async (): Promise<{ success: boolean; orderId?: number }> => {
+    try {
+      const res = await fetch("http://localhost:4000/api/cart/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Error al procesar la orden");
+        return { success: false };
+      }
+
+      toast.success("¡Orden creada exitosamente!");
+      await loadCart();
+      setIsOpen(false);
+      
+      return { success: true, orderId: data.orderId };
+    } catch (err) {
+      toast.error("Error al procesar la orden");
+      console.error(err);
+      return { success: false };
+    }
   };
 
   const toggleCart = () => setIsOpen((p) => !p);
+  const clearCart = () => setItems([]);
 
   const totalQuantity = items.reduce((t, x) => t + x.quantity, 0);
   const totalPrice = items.reduce((t, x) => t + x.quantity * x.price, 0);
@@ -114,6 +190,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         toggleCart,
         addToCart,
         removeItem,
+        updateQuantity,
+        checkout: checkoutCart,
+        loadCart,
+        clearCart,
       }}
     >
       {children}

@@ -57,10 +57,10 @@ export default function NewProduct() {
 
 
   return (
-    <div className="w-full flex flex-col items-center py-8 px-4 space-y-8">
+    <div className="w-full min-h-screen bg-white flex flex-col items-center py-10 px-4 space-y-8">
 
-      <div className="w-full max-w-3xl">
-        <Button variant="outline" className="mb-4" asChild>
+      <div className="w-full max-w-7xl">
+        <Button variant="outline" className="mb-4 rounded-xl border-gray-300 hover:bg-gray-50 transition-all" asChild>
           <a href="/admin/products">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver a productos
@@ -69,9 +69,9 @@ export default function NewProduct() {
       </div>
 
       {/* FORMULARIO */}
-      <Card className="w-full max-w-3xl shadow-lg border border-gray-200 bg-white rounded-xl">
+      <Card className="w-full max-w-7xl shadow-lg border border-gray-100 bg-white rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center font-semibold text-gray-800">
+          <CardTitle className="text-2xl text-center font-bold text-gray-900">
             Completa la información principal del nuevo producto.
           </CardTitle>
         </CardHeader>
@@ -86,8 +86,8 @@ export default function NewProduct() {
         <div className="w-full max-w-4xl space-y-8">
 
           {/* SUBIR IMÁGENES */}
-          <Card className="shadow border border-gray-200 bg-white rounded-xl p-4">
-            <h2 className="text-xl font-semibold mb-3">Imágenes del producto</h2>
+          <Card className="shadow-lg border border-gray-100 bg-white rounded-2xl p-6">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Imágenes del producto</h2>
             <ImageUploader
               productId={createdProduct.id}
               onUploaded={(img) => {
@@ -100,7 +100,7 @@ export default function NewProduct() {
           </Card>
 
           {/* VARIANTES */}
-          <Card className="shadow border border-gray-200 bg-white rounded-xl p-4">
+          <Card className="shadow-lg border border-gray-100 bg-white rounded-2xl p-6">
             <VariantManager
               product={createdProduct}
               setProduct={setCreatedProduct}

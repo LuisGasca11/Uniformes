@@ -3,39 +3,365 @@ import HeroSection from "../components/HeroSection";
 import Breadcrumb from "../components/Breadcrumb";
 import CategoryMenu from "../components/CategoryMenu";
 import ProductsGrid from "../components/ProductsGrid";
+import Pagination from "../components/Pagination";
 import type { Product } from "../types/product";
+import { SlidersHorizontal, X, ChevronDown } from "lucide-react";
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface ColorOption {
+  color_hex: string;
+  color_name: string;
+}
+
+const ITEMS_PER_PAGE = 12;
 
 const AllProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filtros
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [sortBy, setSortBy] = useState<string>("default");
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [availableColors, setAvailableColors] = useState<ColorOption[]>([]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/products");
-        const data = await res.json();
-        setProducts(data);
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch("http://localhost:4000/api/products"),
+          fetch("http://localhost:4000/api/categories")
+        ]);
+        const productsData = await productsRes.json();
+        const categoriesData = await categoriesRes.json();
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+        setCategories(categoriesData);
+
+        // Calcular precio máximo
+        if (productsData.length > 0) {
+          const maxPrice = Math.max(...productsData.map((p: Product) => parseFloat(String(p.price))));
+          setPriceRange([0, Math.ceil(maxPrice / 100) * 100]);
+        }
+
+        // Extraer colores disponibles
+        const colors = new Map<string, ColorOption>();
+        productsData.forEach((p: Product) => {
+          p.variants?.forEach((v) => {
+            if (v.color_hex && !colors.has(v.color_hex)) {
+              colors.set(v.color_hex, { color_hex: v.color_hex, color_name: v.color_name });
+            }
+          });
+        });
+        setAvailableColors(Array.from(colors.values()));
       } catch (error) {
-        console.error("Error al obtener productos:", error);
+        console.error("Error al obtener datos:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
+  // Aplicar filtros
+  useEffect(() => {
+    let result = [...products];
+
+    // Filtrar por categoría
+    if (selectedCategory) {
+      result = result.filter(p => p.category_id?.toString() === selectedCategory);
+    }
+
+    // Filtrar por precio
+    result = result.filter(p => {
+      const price = parseFloat(String(p.price));
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+
+    // Filtrar por colores
+    if (selectedColors.length > 0) {
+      result = result.filter(p => 
+        p.variants?.some(v => selectedColors.includes(v.color_hex))
+      );
+    }
+
+    // Ordenar
+    switch (sortBy) {
+      case "price-asc":
+        result.sort((a, b) => parseFloat(String(a.price)) - parseFloat(String(b.price)));
+        break;
+      case "price-desc":
+        result.sort((a, b) => parseFloat(String(b.price)) - parseFloat(String(a.price)));
+        break;
+      case "name-asc":
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        result.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+
+    setFilteredProducts(result);
+    setCurrentPage(1); // Reset página al cambiar filtros
+  }, [products, selectedCategory, priceRange, sortBy, selectedColors]);
+
+  const clearFilters = () => {
+    setSelectedCategory("");
+    const maxPrice = products.length > 0 
+      ? Math.ceil(Math.max(...products.map(p => parseFloat(String(p.price)))) / 100) * 100
+      : 10000;
+    setPriceRange([0, maxPrice]);
+    setSortBy("default");
+    setSelectedColors([]);
+    setCurrentPage(1);
+  };
+
+  const toggleColor = (colorHex: string) => {
+    setSelectedColors(prev => 
+      prev.includes(colorHex) 
+        ? prev.filter(c => c !== colorHex)
+        : [...prev, colorHex]
+    );
+  };
+
+  // Paginación
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const activeFiltersCount = [
+    selectedCategory,
+    priceRange[0] > 0 || priceRange[1] < (products.length > 0 ? Math.ceil(Math.max(...products.map(p => parseFloat(String(p.price)))) / 100) * 100 : 10000),
+    sortBy !== "default",
+    selectedColors.length > 0
+  ].filter(Boolean).length;
+
+  const maxPriceValue = products.length > 0 
+    ? Math.ceil(Math.max(...products.map(p => parseFloat(String(p.price)))) / 100) * 100
+    : 10000;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <HeroSection />
       <Breadcrumb />
       <CategoryMenu />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Todos los artículos
-        </h1>
-        <ProductsGrid products={products} loading={loading} />
+        {/* Header con título y controles */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Todos los artículos
+            </h1>
+            <p className="text-gray-500 mt-1">
+              {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Botón de filtros en móvil */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              Filtros
+              {activeFiltersCount > 0 && (
+                <span className="bg-[#009be9] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
+            {/* Ordenar */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-10 text-sm font-medium cursor-pointer hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-[#009be9]"
+              >
+                <option value="default">Ordenar por</option>
+                <option value="price-asc">Precio: Menor a Mayor</option>
+                <option value="price-desc">Precio: Mayor a Menor</option>
+                <option value="name-asc">Nombre: A-Z</option>
+                <option value="name-desc">Nombre: Z-A</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-8">
+          {/* Sidebar de filtros - Desktop */}
+          <aside className={`
+            ${showFilters ? 'fixed inset-0 z-50 bg-black/50' : 'hidden'} 
+            lg:relative lg:block lg:bg-transparent lg:z-auto
+          `}>
+            <div className={`
+              ${showFilters ? 'absolute right-0 top-0 h-full w-80 bg-white p-6 overflow-y-auto' : ''} 
+              lg:relative lg:w-64 lg:p-0
+            `}>
+              {/* Header móvil */}
+              {showFilters && (
+                <div className="flex justify-between items-center mb-6 lg:hidden">
+                  <h2 className="text-lg font-bold">Filtros</h2>
+                  <button onClick={() => setShowFilters(false)}>
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-gray-900">Filtros</h3>
+                  {activeFiltersCount > 0 && (
+                    <button 
+                      onClick={clearFilters}
+                      className="text-sm text-[#009be9] hover:underline"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {/* Filtro por categoría */}
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-3">Categoría</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={selectedCategory === ""}
+                        onChange={() => setSelectedCategory("")}
+                        className="w-4 h-4 text-[#009be9] focus:ring-[#009be9]"
+                      />
+                      <span className="text-sm text-gray-600">Todas</span>
+                    </label>
+                    {categories.map(cat => (
+                      <label key={cat.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="category"
+                          checked={selectedCategory === cat.id.toString()}
+                          onChange={() => setSelectedCategory(cat.id.toString())}
+                          className="w-4 h-4 text-[#009be9] focus:ring-[#009be9]"
+                        />
+                        <span className="text-sm text-gray-600">{cat.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filtro por precio */}
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-3">Precio</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500">Mínimo</label>
+                        <input
+                          type="number"
+                          value={priceRange[0]}
+                          onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#009be9]"
+                          min={0}
+                          max={priceRange[1]}
+                        />
+                      </div>
+                      <span className="text-gray-400 mt-5">-</span>
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500">Máximo</label>
+                        <input
+                          type="number"
+                          value={priceRange[1]}
+                          onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#009be9]"
+                          min={priceRange[0]}
+                          max={maxPriceValue}
+                        />
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={maxPriceValue}
+                      value={priceRange[1]}
+                      onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                      className="w-full accent-[#009be9]"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>$0</span>
+                      <span>${maxPriceValue.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filtro por colores */}
+                {availableColors.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-3">Color</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map((color) => (
+                        <button
+                          key={color.color_hex}
+                          onClick={() => toggleColor(color.color_hex)}
+                          title={color.color_name}
+                          className={`
+                            w-8 h-8 rounded-full border-2 transition-all
+                            ${selectedColors.includes(color.color_hex) 
+                              ? 'border-[#009be9] ring-2 ring-[#009be9]/30 scale-110' 
+                              : 'border-gray-300 hover:border-gray-400'}
+                          `}
+                          style={{ backgroundColor: color.color_hex }}
+                        />
+                      ))}
+                    </div>
+                    {selectedColors.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        {selectedColors.length} color{selectedColors.length > 1 ? 'es' : ''} seleccionado{selectedColors.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Botón aplicar en móvil */}
+              {showFilters && (
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="lg:hidden w-full mt-6 bg-[#009be9] text-white py-3 rounded-xl font-bold"
+                >
+                  Ver {filteredProducts.length} resultados
+                </button>
+              )}
+            </div>
+          </aside>
+
+          {/* Grid de productos */}
+          <div className="flex-1">
+            <ProductsGrid products={paginatedProducts} loading={loading} />
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ function VariantCodeSelect({ variants }: { variants: any[] }) {
   return (
     <div className="flex flex-col gap-1">
       <select
-        className="border border-gray-300 rounded px-2 py-1 text-sm"
+        className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
         value={selected?.id}
         onChange={(e) =>
           setSelected(variants.find((v) => v.id === Number(e.target.value)))
@@ -37,20 +37,20 @@ function VariantCodeSelect({ variants }: { variants: any[] }) {
 
 export default function DataTable({ data }: { data: any[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-surface shadow">
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-sm">
           <thead>
-            <tr className="bg-muted/40 border-b">
-              <th className="p-4 font-semibold">ID</th>
-              <th className="p-4 font-semibold">Nombre</th>
-              <th className="p-4 font-semibold">Marca</th>
-              <th className="p-4 font-semibold">Precio</th>
-              <th className="p-4 font-semibold">Categoría</th>
-              <th className="p-4 font-semibold text-center">Variantes</th>
-              <th className="p-4 font-semibold text-center">Stock total</th>
-              <th className="p-4 font-semibold">Códigos / Claves</th>
-              <th className="p-4 font-semibold text-center">Acciones</th>
+            <tr className="bg-gray-50 border-b">
+              <th className="p-4 font-semibold text-gray-700">ID</th>
+              <th className="p-4 font-semibold text-gray-700">Nombre</th>
+              <th className="p-4 font-semibold text-gray-700">Marca</th>
+              <th className="p-4 font-semibold text-gray-700">Precio</th>
+              <th className="p-4 font-semibold text-gray-700">Categoría</th>
+              <th className="p-4 font-semibold text-gray-700 text-center">Variantes</th>
+              <th className="p-4 font-semibold text-gray-700 text-center">Stock total</th>
+              <th className="p-4 font-semibold text-gray-700">Códigos / Claves</th>
+              <th className="p-4 font-semibold text-gray-700 text-center">Acciones</th>
             </tr>
           </thead>
 
@@ -66,13 +66,10 @@ export default function DataTable({ data }: { data: any[] }) {
               return (
                 <tr
                   key={p.id}
-                  className={`
-                    border-b transition hover:bg-muted
-                    ${i % 2 === 0 ? "bg-surface" : "bg-muted/20"}
-                  `}
+                  className="border-b transition-colors hover:bg-blue-50/30 bg-white"
                 >
                   {/* ID */}
-                  <td className="p-4">{p.id}</td>
+                  <td className="p-4 font-bold text-gray-500">{p.id}</td>
 
                   {/* Nombre */}
                   <td className="p-4 font-medium">{p.name}</td>

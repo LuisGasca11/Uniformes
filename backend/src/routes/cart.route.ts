@@ -6,7 +6,8 @@ import {
   addToCart,
   updateCartItem,
   removeCartItem,
-  clearCart
+  clearCart,
+  checkout
 } from "../controllers/cart.controller";
 
 const router = Router();
@@ -16,6 +17,8 @@ router.use(auth);
 router.get("/", getCart);
 
 router.post("/add", addToCart);
+
+router.post("/checkout", checkout);
 
 router.patch("/item/:itemId", updateCartItem);
 

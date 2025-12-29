@@ -39,13 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (t && u) {
       const decoded = decodeJWT(t);
 
-      if (decoded?.exp * 1000 < Date.now()) {
-        console.warn("⛔ Token expirado al cargar");
-        logout();
+      if (decoded?.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+        console.warn("⛔ Token expirado al cargar, limpiando...");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // No llamar logout() aquí porque causa re-render infinito
       } else {
         setToken(t);
         setUser(JSON.parse(u));
-        setRole(decoded.role || null);
+        setRole(decoded?.role || null);
       }
     }
   }, []);
@@ -83,17 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!decoded?.exp) return;
 
     const msLeft = decoded.exp * 1000 - Date.now();
+    
+    // Solo cerrar sesión si ya expiró
     if (msLeft <= 0) {
-      logout();
-      return;
+      console.warn("⛔ Token ya expirado");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setToken(null);
+      setUser(null);
+      setRole(null);
     }
-
-    const timer = setTimeout(() => {
-      console.warn("⛔ Token expirado, cerrando sesión");
-      logout();
-    }, msLeft);
-
-    return () => clearTimeout(timer);
+    // Ya no usar setTimeout - la verificación se hace al cargar
   }, [token]);
 
   const login = (newToken: string, newUser: User) => {

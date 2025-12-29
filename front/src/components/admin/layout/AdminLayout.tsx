@@ -6,8 +6,8 @@ export default function AdminLayout() {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
 
-      <div className="flex flex-col flex-1">
-        <main className="p-6">
+      <div className="flex flex-col flex-1 w-full">
+        <main className="p-4 pt-16 lg:pt-6 lg:p-6">
           <Outlet />   
         </main>
       </div>

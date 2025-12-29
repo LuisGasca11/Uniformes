@@ -8,10 +8,14 @@ import {
     Truck,
     Minus, 
     Plus, 
-    Zap, 
+    Zap,
+    Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/CartProvider";
+import { useWishlist } from "@/hooks/WishlistProvider";
+import RelatedProducts from "@/components/RelatedProducts";
+import ImageZoom from "@/components/ImageZoom";
 import type { Product } from "../types/product";
 
 const STOCK_REFRESH_MS = 5000;
@@ -20,6 +24,7 @@ const ProductDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { isInWishlist, toggleWishlist } = useWishlist();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -158,11 +163,6 @@ const ProductDetail = () => {
         }
 
         addToCart(product.id, freshVariant.id, quantity);
-        toast.success(
-            <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" /> Producto agregado al carrito.
-            </div>
-        );
     };
 
     const isAddToCartDisabled = !selectedVariant || selectedVariant.stock <= 0;
@@ -184,12 +184,27 @@ const ProductDetail = () => {
             <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 bg-white rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-gray-100">
                     <div>
-                        <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden shadow-lg border border-gray-200">
-                            <img
+                        {/* Imagen con zoom al hover - estilo Amazon */}
+                        <div className="relative">
+                            <ImageZoom
                                 src={getCurrentImage()}
                                 alt={product.name}
-                                className="w-full h-full object-contain transition-opacity duration-300 hover:scale-[1.03]"
+                                className="aspect-square bg-gray-100 rounded-xl shadow-lg border border-gray-200"
                             />
+
+                            {/* Botón de favoritos */}
+                            <button
+                                onClick={() => toggleWishlist(product.id)}
+                                className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors z-10"
+                            >
+                                <Heart
+                                    className={`w-6 h-6 transition-colors ${
+                                        isInWishlist(product.id)
+                                            ? "fill-red-500 text-red-500"
+                                            : "text-gray-400 hover:text-red-400"
+                                    }`}
+                                />
+                            </button>
                         </div>
 
                         {images.length > 1 && (
@@ -341,7 +356,7 @@ const ProductDetail = () => {
                                     disabled={isAddToCartDisabled}
                                     className={`w-full py-3 sm:py-4 rounded-xl font-extrabold text-lg flex justify-center gap-3 items-center transition-all duration-300 transform hover:scale-[1.01] shadow-lg
                                         ${!isAddToCartDisabled
-                                            ? "bg-blue-600 text-white hover:bg-blue-700 ring-4 ring-blue-300/50"
+                                            ? "bg-[#009be9] text-white hover:bg-[#0089d0] ring-4 ring-[#009be9]/30"
                                             : "bg-gray-400 text-gray-600 cursor-not-allowed shadow-none"
                                         }
                                     `}
@@ -378,6 +393,14 @@ const ProductDetail = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Productos relacionados */}
+                {product.category_id && (
+                    <RelatedProducts
+                        categoryId={product.category_id}
+                        currentProductId={product.id}
+                    />
+                )}
             </div>
         </div>
     );

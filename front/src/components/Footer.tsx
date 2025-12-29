@@ -47,7 +47,7 @@ const Footer: React.FC<FooterProps> = ({
 
               {showPartnerLinks && (
                 <a
-                  href="/Form"
+                  href="/contacto"
                   className="text-white text-sm hover:text-sky-400 transition-all duration-200"
                 >
                   Contáctanos
@@ -56,21 +56,19 @@ const Footer: React.FC<FooterProps> = ({
 
               {showPartnerLinks && (
                 <a
-                  href="https://club.mosip.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/politicas"
                   className="text-white text-sm hover:text-sky-400 transition-all duration-200"
                 >
-                  yfutf
+                  Políticas
                 </a>
               )}
 
               {showLearnMoreLinks && (
                 <a
-                  href="/MicroPage"
+                  href="/uniformes"
                   className="text-white text-sm hover:text-sky-400 transition-all duration-200"
                 >
-                  tdyd
+                  Catálogo
                 </a>
               )}
             </div>
@@ -110,16 +108,16 @@ const Footer: React.FC<FooterProps> = ({
             style={{ animationDelay: "0.5s" }}
           >
             <p className="text-white leading-relaxed">
-              © 2026 Black Sheep® |{" "}
+              © 2025 FYTTSA® |{" "}
               <a
-                href="/avisoPrivacidad"
+                href="/politicas"
                 className="hover:text-sky-400 transition-all duration-200 mx-1"
               >
                 Aviso de Privacidad
               </a>{" "}
               |{" "}
               <a
-                href="/terminosCondiciones"
+                href="/politicas"
                 className="hover:text-sky-400 transition-all duration-200 mx-1"
               >
                 Términos y Condiciones

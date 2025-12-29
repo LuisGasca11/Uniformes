@@ -13,12 +13,14 @@ export default function ProductsAdmin() {
   }, []);
 
   return (
-    <div>
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold">Productos</h2>
+    <div className="p-8 bg-white min-h-screen">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Productos</h1>
 
         <Link to="/admin/products/new">
-          <Button>+ Nuevo Producto</Button>
+          <Button className="bg-[#009be9] text-white px-5 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-[#0088cc] transition-all duration-200">
+            + Nuevo Producto
+          </Button>
         </Link>
       </div>
 
